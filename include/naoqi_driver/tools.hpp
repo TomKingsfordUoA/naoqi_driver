@@ -37,6 +37,7 @@ namespace robot
 enum Robot
 {
   UNIDENTIFIED,
+  SIMULATED,
   NAO,
   PEPPER,
   ROMEO

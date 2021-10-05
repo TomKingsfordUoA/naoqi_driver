@@ -544,7 +544,7 @@ void Driver::registerDefaultConverter()
   bool info_enabled                   = boot_config_.get( "converters.info.enabled", true);
   size_t info_frequency               = boot_config_.get( "converters.info.frequency", 1);
 
-  bool audio_enabled                  = boot_config_.get( "converters.audio.enabled", true);
+  bool audio_enabled                  = (robot_ == robot::SIMULATED) ? 0 : boot_config_.get( "converters.audio.enabled", true);
   size_t audio_frequency              = boot_config_.get( "converters.audio.frequency", 1);
 
   bool logs_enabled                   = boot_config_.get( "converters.logs.enabled", true);

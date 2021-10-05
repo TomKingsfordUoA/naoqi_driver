@@ -41,10 +41,29 @@ static naoqi_bridge_msgs::RobotInfo& getRobotInfoLocal( const qi::SessionPtr& se
   // Get the robot type
   std::cout << "Receiving information about robot model" << std::endl;
   qi::AnyObject p_memory = session->service("ALMemory");
-  std::string robot = p_memory.call<std::string>("getData", "RobotConfig/Body/Type" );
-  std::string version = p_memory.call<std::string>("getData", "RobotConfig/Body/BaseVersion" );
+  bool is_simulated = isSimulated(session);
+  std::string robot; 
+  if ( is_simulated )
+  {
+    robot = p_memory.call<std::string>("getData", "Dialog/RobotModel");
+  }
+  else
+  {
+    robot = p_memory.call<std::string>("getData", "RobotConfig/Body/Type");
+  }
+  std::string version;
+  try {
+    version = p_memory.call<std::string>("getData", "RobotConfig/Body/BaseVersion" );
+  }
+  catch(const qi::FutureUserException& e) {
+    version = "unknown";
+  }
   std::transform(robot.begin(), robot.end(), robot.begin(), ::tolower);
 
+  if ( is_simulated ) 
+  {
+    std::cout << BOLDYELLOW << "Simulated robot detected" << RESETCOLOR << std::endl;
+  }
   if (std::string(robot) == "nao")
   {
     info.type = naoqi_bridge_msgs::RobotInfo::NAO;
@@ -182,15 +201,19 @@ const robot::Robot& getRobot( const qi::SessionPtr& session )
 {
   static robot::Robot robot = robot::UNIDENTIFIED;
 
-  if ( getRobotInfo(session).type == naoqi_bridge_msgs::RobotInfo::NAO )
+  if ( isSimulated(session) ) 
+  {
+    robot = robot::SIMULATED;
+  }
+  else if ( getRobotInfo(session).type == naoqi_bridge_msgs::RobotInfo::NAO )
   {
     robot = robot::NAO;
   }
-  if ( getRobotInfo(session).type == naoqi_bridge_msgs::RobotInfo::PEPPER )
+  else if ( getRobotInfo(session).type == naoqi_bridge_msgs::RobotInfo::PEPPER )
   {
     robot = robot::PEPPER;
   }
-  if ( getRobotInfo(session).type == naoqi_bridge_msgs::RobotInfo::ROMEO )
+  else if ( getRobotInfo(session).type == naoqi_bridge_msgs::RobotInfo::ROMEO )
   {
     robot = robot::ROMEO;
   }
@@ -257,6 +280,17 @@ bool isDepthStereo(const qi::SessionPtr &session) {
    std::cerr << e.what() << std::endl;
    return false;
  }
+}
+
+bool isSimulated(const qi::SessionPtr &session) {
+  qi::AnyObject p_memory = session->service("ALMemory");
+  try {
+    p_memory.call<std::string>("getData", "RobotConfig/Body/Type" );
+    return false;
+  }
+  catch(const qi::FutureUserException& e) {
+    return true;
+  }
 }
 
 } // driver
